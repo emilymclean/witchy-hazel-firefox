@@ -1,0 +1,136 @@
+extends "package://github.com/BenMMcLean/pkl-github-actions/releases/download/v0.1.0-alpha.45/pkl-github-actions@0.1.0-alpha.45#/actions.pkl"
+
+local checkout = new ActionStep {
+    name = "Checkout code"
+    uses = "actions/checkout@v2"
+    with = new Mapping {
+        ["fetch-depth"] = 0
+    }
+}
+
+
+name = "Build Theme"
+
+on = new On {
+    push = new Push {
+        branches = new Listing { 
+            "main"
+            "develop"
+        }
+    }
+}
+
+jobs = new Mapping {
+    ["version"] = new Job {
+        outputs = new Mapping {
+            ["version"] = "${{ steps.gitversion.outputs.semVer }}"
+        }
+        steps = new Listing {
+            checkout
+            new ActionStep {
+                name = "Install gitversion"
+                uses = "gittools/actions/gitversion/setup@v0.9.6"
+                with = new Mapping {
+                    ["versionSpec"] = "5.x"
+                }
+            }
+            new ActionStep {
+                id = "gitversion"
+                name = "Use gitversion"
+                uses = "gittools/actions/gitversion/execute@v0.9.6"
+                with = new Mapping {
+                    ["useConfigFile"] = true
+                    ["configFilePath"] = "./gitversion.yml"
+                }
+            }
+            new CommandStep {
+                name = "Display version"
+                run = "echo \"SemVer: ${{ steps.gitversion.outputs.semVer }}\""
+            }
+        }
+    }
+    ["release"] = new Job {
+        needs = new Listing {
+            "version"
+        }
+        `if` = "github.event_name != 'pull_request'"
+        permissions = new Mapping {
+            ["contents"] = "write"
+        }
+        outputs = new Mapping {
+            ["upload_url"] = "${{ steps.create_release.outputs.upload_url }}"
+        }
+        steps = new Listing {
+            checkout
+            new ActionStep {
+                id = "create_release"
+                name = "Create Release"
+                uses = "softprops/action-gh-release@v2"
+                with = new Mapping {
+                    ["token"] = "${{ secrets.GITHUB_TOKEN }}"
+                    ["tag_name"] = "v${{ needs.version.outputs.version }}"
+                    ["name"] = "Release ${{ needs.version.outputs.version }}"
+                    ["target_commitish"] = "${{ github.sha }}"
+                    ["draft"] = false
+                    ["prerelease"] = "${{ github.ref != 'refs/heads/main' }}"
+                }
+            }
+        }
+    }
+    ["build"] = new Job {
+        needs = new Listing {
+            "version"
+        }
+        steps = new Listing {
+            checkout
+            new ActionStep {
+                name = "Bump manifest version"
+                uses = "jacobtomlinson/gha-find-replace@v3"
+                with = new Mapping {
+                    ["find"] = "\"version\": \".+\""
+                    ["replace"] = "\"version\": \"${{ needs.version.outputs.version }}\""
+                    ["regex"] = true
+                }
+            }
+            new CommandStep {
+                run = "zip theme.xpi manifest.json"
+            }
+            new ActionStep {
+                uses = "actions/upload-artifact@master"
+                with = new Mapping {
+                    ["name"] = "theme-xpi"
+                    ["path"] = "./theme.xpi"
+                }
+            }
+        }
+    }
+    ["publish-release"] = new Job {
+        needs = new Listing {
+            "version"
+            "release"
+            "build"
+        }
+        steps = new Listing {
+            new ActionStep {
+                uses = "actions/download-artifact@master"
+                with = new Mapping {
+                    ["name"] = "theme-xpi"
+                    ["path"] = "./"
+                }
+            }
+            new ActionStep {
+                name = "Upload Artifact to Release"
+                uses = "actions/upload-release-asset@v1"
+                env = new Mapping {
+                    ["GITHUB_TOKEN"] = "${{ secrets.GITHUB_TOKEN }}"
+                }
+                with = new Mapping {
+                    ["upload_url"] = "${{ needs.release.outputs.upload_url }}"
+                    ["asset_path"] = "./theme.xpi"
+                    ["asset_name"] = "theme-v${{ needs.version.outputs.version }}.xpi"
+                    ["asset_content_type"] = "application/zip"
+                }
+            }
+        }  
+    }
+}

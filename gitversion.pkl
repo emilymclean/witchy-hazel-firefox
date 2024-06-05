@@ -1,0 +1,130 @@
+amends "package://github.com/BenMMcLean/pkl-gitversion/releases/download/v0.1.0/pkl-gitversion@0.1.0#/schema.pkl"
+
+`assembly-versioning-scheme` = "MajorMinorPatch"
+`assembly-file-versioning-scheme` = "MajorMinorPatch"
+`mode` = "ContinuousDelivery"
+`tag-prefix` = "(pre/)?[vV]"
+`continuous-delivery-fallback-tag` = "ci"
+`commit-date-format` = "yyyy-MM-dd"
+`update-build-number` = true
+
+branches = new Mapping {
+    ["develop"] = new BranchConfig {
+        mode = "ContinuousDeployment"
+        tag = "alpha"
+        increment = "Minor"
+        `prevent-increment-of-merged-branch-version` = false
+        `track-merge-target` = true
+        regex = "^develop$"
+        `tracks-release-branches` = true
+        `is-release-branch` = false
+        `is-mainline` = false
+        `pre-release-weight` = 0
+    }
+    ["main"] = new BranchConfig {
+        mode = "ContinuousDelivery"
+        tag = ""
+        increment = "Patch"
+        `prevent-increment-of-merged-branch-version` = true
+        `track-merge-target` = false
+        regex = "^master$|^main$"
+        `source-branches` = new Listing {
+            "develop"
+            "release"
+        }
+        `tracks-release-branches` = false
+        `is-release-branch` = false
+        `is-mainline` = true
+        `pre-release-weight` = 55000
+    }
+    ["release"] = new BranchConfig {
+        mode = "ContinuousDelivery"
+        tag = "beta"
+        increment = "None"
+        `prevent-increment-of-merged-branch-version` = true
+        `track-merge-target` = false
+        regex = "^releases?[/-]"
+        `source-branches` = new Listing {
+            "develop"
+            "main"
+            "support"
+            "release"
+        }
+        `tracks-release-branches` = false
+        `is-release-branch` = true
+        `is-mainline` = false
+        `pre-release-weight` = 30000
+    }
+    ["feature"] = new BranchConfig {
+        mode = "ContinuousDelivery"
+        tag = "useBranchName"
+        increment = "Inherit"
+        `prevent-increment-of-merged-branch-version` = false
+        `track-merge-target` = false
+        regex = "^.*[/-]features?[/-]"
+        `source-branches` = new Listing {
+            "develop"
+            "main"
+            "release"
+            "feature"
+            "support"
+            "hotfix"
+        }
+        `tracks-release-branches` = false
+        `is-release-branch` = false
+        `is-mainline` = false
+        `pre-release-weight` = 30000
+    }
+    ["pull-request"] = new BranchConfig {
+        mode = "ContinuousDelivery"
+        tag = "PullRequest"
+        increment = "Inherit"
+        `prevent-increment-of-merged-branch-version` = false
+        `track-merge-target` = false
+        regex = "[/-](?<number>\\d+)"
+        `source-branches` = new Listing {
+            "develop"
+            "main"
+            "release"
+            "feature"
+            "support"
+            "hotfix"
+        }
+        `tracks-release-branches` = false
+        `is-release-branch` = false
+        `is-mainline` = false
+        `pre-release-weight` = 30000
+    }
+    ["hotfix"] = new BranchConfig {
+        mode = "ContinuousDelivery"
+        tag = "beta"
+        increment = "Patch"
+        `prevent-increment-of-merged-branch-version` = false
+        `track-merge-target` = false
+        regex = "^.*[/-]hotfix(es)?[/-]"
+        `source-branches` = new Listing {
+            "develop"
+            "main"
+            "support"
+        }
+        `tracks-release-branches` = false
+        `is-release-branch` = false
+        `is-mainline` = false
+        `pre-release-weight` = 30000
+    }
+    ["support"] = new BranchConfig {
+        mode = "ContinuousDelivery"
+        tag = ""
+        increment = "Patch"
+        `prevent-increment-of-merged-branch-version` = true
+        `track-merge-target` = false
+        regex = "^.*[/-]support[/-]"
+        `source-branches` = new Listing {
+            "main"
+        }
+        `tracks-release-branches` = false
+        `is-release-branch` = false
+        `is-mainline` = true
+        `pre-release-weight` = 55000
+    }
+}
