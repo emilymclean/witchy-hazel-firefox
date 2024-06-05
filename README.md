@@ -1,1 +1,1 @@
-An unofficial port of the "Witch Hazel" color scheme from [https://witchhazel.thea.codes/]
+An unofficial port of the ["Witch Hazel"](https://witchhazel.thea.codes/) color scheme for Firefox
