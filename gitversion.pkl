@@ -7,6 +7,7 @@ amends "package://github.com/BenMMcLean/pkl-gitversion/releases/download/v0.1.0/
 `continuous-delivery-fallback-tag` = "ci"
 `commit-date-format` = "yyyy-MM-dd"
 `update-build-number` = true
+`next-version` = "1.1.0"
 
 branches = new Mapping {
     ["develop"] = new BranchConfig {
