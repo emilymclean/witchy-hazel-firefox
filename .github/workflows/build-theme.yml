@@ -71,6 +71,8 @@ jobs:
         name: theme-xpi
         path: ./theme.xpi
   publish-release:
+    permissions:
+      contents: write
     needs:
     - version
     - release

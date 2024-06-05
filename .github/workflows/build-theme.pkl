@@ -105,6 +105,9 @@ jobs = new Mapping {
         }
     }
     ["publish-release"] = new Job {
+        permissions = new Mapping {
+            ["contents"] = "write"
+        }
         needs = new Listing {
             "version"
             "release"
