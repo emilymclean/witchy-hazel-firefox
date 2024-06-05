@@ -1,6 +1,6 @@
 {
   "manifest_version": 2,
-  "version": "1.1",
+  "version": "1.2",
   "name": "Witchy Hazel",
   "theme": {
     "images": {},
@@ -14,12 +14,13 @@
       "toolbar_field_text": "rgb(255, 255, 255)",
       "tab_line": "rgb(199, 106, 204)",
       "popup": "rgb(111, 103, 149)",
-      "popup_text": "rgb(205, 251, 223)",
+      "popup_text": "rgb(255, 255, 255)",
+      "icons": "rgb(205, 251, 223)",
       "ntp_background": "rgb(111, 103, 149)",
       "popup_border": "rgb(199, 106, 204)",
       "tab_loading": "rgb(205, 251, 223)",
       "tab_selected": "rgb(111, 103, 149)",
-      "tab_text": "rgb(205, 251, 223)",
+      "tab_text": "rgb(255, 255, 255)",
       "toolbar_field_border_focus": "rgb(199, 106, 204)"
     }
   }
