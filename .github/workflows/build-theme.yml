@@ -67,7 +67,7 @@ jobs:
     - run: python rewrite-manifest.py
     - env:
         EXTENSION_KEY: ${{ secrets.CHROME_SIGNING_KEY }}
-      uses: BenMMcLean/pack-chromium-extension@v1
+      uses: BenMMcLean/pack-chromium-extension@v1.0.1
       with:
         input-folder: chrome
         output-file: theme.crx

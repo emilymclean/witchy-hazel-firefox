@@ -97,7 +97,7 @@ jobs = new Mapping {
                 run = "python rewrite-manifest.py"
             }
             new ActionStep {
-                uses = "BenMMcLean/pack-chromium-extension@v1"
+                uses = "BenMMcLean/pack-chromium-extension@v1.0.1"
                 env = new Mapping {
                     ["EXTENSION_KEY"] = "${{ secrets.CHROME_SIGNING_KEY }}"
                 }
