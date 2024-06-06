@@ -12,6 +12,7 @@ def rewrite():
     input = json.loads(input_file)
 
     input["manifest_version"] = 3
+    input["version"] = re.sub("[^\\d\\.]","",input["version"])
     input["theme"]["colors"] = {k: rgb_to_chrome(v) for k,v in input["theme"]["colors"].items()}
 
     if not os.path.exists("chrome"):
