@@ -2,6 +2,8 @@
   "manifest_version": 2,
   "version": "1.0",
   "name": "Witchy Hazel",
+  "author": "Emily McLean",
+  "homepage_url": "https://github.com/BenMMcLean/witchy-hazel-firefox",
   "theme": {
     "images": {},
     "properties": {},

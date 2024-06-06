@@ -8,7 +8,7 @@ local checkout = new ActionStep {
     }
 }
 
-local uploadExtensions = List("xpi", "zip")
+local uploadExtensions = List("zip")
 
 
 name = "Build Theme"
