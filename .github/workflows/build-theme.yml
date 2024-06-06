@@ -50,7 +50,7 @@ jobs:
         target_commitish: ${{ github.sha }}
         draft: false
         prerelease: ${{ github.ref != 'refs/heads/main' }}
-  build:
+  build-firefox:
     needs:
     - version
     runs-on: ubuntu-latest
@@ -70,13 +70,42 @@ jobs:
       with:
         name: theme-xpi
         path: ./theme.xpi
+  build-chrome:
+    needs:
+    - version
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: Bump manifest version
+      uses: jacobtomlinson/gha-find-replace@v3
+      with:
+        find: '"version": ".+"'
+        replace: '"version": "${{ needs.version.outputs.version }}"'
+        regex: true
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+    - run: python rewrite-manifest.py
+    - env:
+        EXTENSION_KEY: ${{ secrets.CHROME_SIGNING_KEY }}
+      uses: BenMMcLean/pack-chromium-extension@v1
+      with:
+        input-folder: chrome
+        output-file: theme.crx
+    - uses: actions/upload-artifact@master
+      with:
+        name: theme-crx
+        path: ./theme.crx
   publish-firefox-release:
     permissions:
       contents: write
     needs:
     - version
     - release
-    - build
+    - build-firefox
     runs-on: ubuntu-latest
     steps:
     - uses: actions/download-artifact@master
@@ -101,3 +130,25 @@ jobs:
         asset_path: ./theme.xpi
         asset_name: witchy-hazel-v${{ needs.version.outputs.version }}.unsigned.xpi
         asset_content_type: application/zip
+  publish-chrome-release:
+    permissions:
+      contents: write
+    needs:
+    - version
+    - release
+    - build-chrome
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/download-artifact@master
+      with:
+        name: theme-crx
+        path: ./
+    - name: Upload Artifact to Release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: actions/upload-release-asset@v1
+      with:
+        upload_url: ${{ needs.release.outputs.upload_url }}
+        asset_path: ./theme.crx
+        asset_name: witchy-hazel-v${{ needs.version.outputs.version }}.crx
+        asset_content_type: application/x-chrome-extension

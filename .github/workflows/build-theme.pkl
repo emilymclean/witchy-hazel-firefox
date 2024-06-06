@@ -8,7 +8,17 @@ local checkout = new ActionStep {
     }
 }
 
-local uploadExtensions = List("zip", "xpi")
+local updateManifestVersion = new ActionStep {
+    name = "Bump manifest version"
+    uses = "jacobtomlinson/gha-find-replace@v3"
+    with = new Mapping {
+        ["find"] = "\"version\": \".+\""
+        ["replace"] = "\"version\": \"${{ needs.version.outputs.version }}\""
+        ["regex"] = true
+    }
+}
+
+local firefoxUploadExtensions = List("zip", "xpi")
 
 
 name = "Build Theme"
@@ -79,21 +89,13 @@ jobs = new Mapping {
             }
         }
     }
-    ["build"] = new Job {
+    ["build-firefox"] = new Job {
         needs = new Listing {
             "version"
         }
         steps = new Listing {
             checkout
-            new ActionStep {
-                name = "Bump manifest version"
-                uses = "jacobtomlinson/gha-find-replace@v3"
-                with = new Mapping {
-                    ["find"] = "\"version\": \".+\""
-                    ["replace"] = "\"version\": \"${{ needs.version.outputs.version }}\""
-                    ["regex"] = true
-                }
-            }
+            updateManifestVersion
             new CommandStep {
                 run = "zip theme.xpi manifest.json"
             }
@@ -106,6 +108,41 @@ jobs = new Mapping {
             }
         }
     }
+    ["build-chrome"] = new Job {
+        needs = new Listing {
+            "version"
+        }
+        steps = new Listing {
+            checkout
+            updateManifestVersion
+            new ActionStep {
+                uses = "actions/setup-python@v5"
+                with = new Mapping {
+                    ["python-version"] = "3.10"
+                }
+            }
+            new CommandStep {
+                run = "python rewrite-manifest.py"
+            }
+            new ActionStep {
+                uses = "BenMMcLean/pack-chromium-extension@v1"
+                env = new Mapping {
+                    ["EXTENSION_KEY"] = "${{ secrets.CHROME_SIGNING_KEY }}"
+                }
+                with = new Mapping {
+                    ["input-folder"] = "chrome"
+                    ["output-file"] = "theme.crx"
+                }
+            }
+            new ActionStep {
+                uses = "actions/upload-artifact@master"
+                with = new Mapping {
+                    ["name"] = "theme-crx"
+                    ["path"] = "./theme.crx"
+                }
+            }
+        }
+    }
     ["publish-firefox-release"] = new Job {
         permissions = new Mapping {
             ["contents"] = "write"
@@ -113,7 +150,7 @@ jobs = new Mapping {
         needs = new Listing {
             "version"
             "release"
-            "build"
+            "build-firefox"
         }
         steps = new Listing {
             new ActionStep {
@@ -123,7 +160,7 @@ jobs = new Mapping {
                     ["path"] = "./"
                 }
             }
-            for (extension in uploadExtensions) {
+            for (extension in firefoxUploadExtensions) {
                 new ActionStep {
                     name = "Upload Artifact to Release"
                     uses = "actions/upload-release-asset@v1"
@@ -136,6 +173,38 @@ jobs = new Mapping {
                         ["asset_name"] = "witchy-hazel-v${{ needs.version.outputs.version }}.unsigned.\(extension)"
                         ["asset_content_type"] = "application/zip"
                     }
+                }
+            }
+        }  
+    }
+    ["publish-chrome-release"] = new Job {
+        permissions = new Mapping {
+            ["contents"] = "write"
+        }
+        needs = new Listing {
+            "version"
+            "release"
+            "build-chrome"
+        }
+        steps = new Listing {
+            new ActionStep {
+                uses = "actions/download-artifact@master"
+                with = new Mapping {
+                    ["name"] = "theme-crx"
+                    ["path"] = "./"
+                }
+            }
+            new ActionStep {
+                name = "Upload Artifact to Release"
+                uses = "actions/upload-release-asset@v1"
+                env = new Mapping {
+                    ["GITHUB_TOKEN"] = "${{ secrets.GITHUB_TOKEN }}"
+                }
+                with = new Mapping {
+                    ["upload_url"] = "${{ needs.release.outputs.upload_url }}"
+                    ["asset_path"] = "./theme.crx"
+                    ["asset_name"] = "witchy-hazel-v${{ needs.version.outputs.version }}.crx"
+                    ["asset_content_type"] = "application/x-chrome-extension"
                 }
             }
         }  
