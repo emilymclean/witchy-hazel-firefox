@@ -8,7 +8,7 @@ local checkout = new ActionStep {
     }
 }
 
-local uploadExtensions = List("zip")
+local uploadExtensions = List("zip", "xpi")
 
 
 name = "Build Theme"
@@ -51,7 +51,7 @@ jobs = new Mapping {
             }
         }
     }
-    ["release"] = new Job {
+    ["release-firefox"] = new Job {
         needs = new Listing {
             "version"
         }
@@ -106,7 +106,7 @@ jobs = new Mapping {
             }
         }
     }
-    ["publish-release"] = new Job {
+    ["publish-firefox-release"] = new Job {
         permissions = new Mapping {
             ["contents"] = "write"
         }
@@ -133,7 +133,7 @@ jobs = new Mapping {
                     with = new Mapping {
                         ["upload_url"] = "${{ needs.release.outputs.upload_url }}"
                         ["asset_path"] = "./theme.xpi"
-                        ["asset_name"] = "theme-v${{ needs.version.outputs.version }}.\(extension)"
+                        ["asset_name"] = "witchy-hazel-v${{ needs.version.outputs.version }}.unsigned.\(extension)"
                         ["asset_content_type"] = "application/zip"
                     }
                 }
