@@ -134,6 +134,9 @@ jobs = new Mapping {
                     ["output-file"] = "theme.crx"
                 }
             }
+            new CommandStep {
+                run = "cat theme.crx"
+            }
             new ActionStep {
                 uses = "actions/upload-artifact@master"
                 with = new Mapping {
@@ -143,70 +146,70 @@ jobs = new Mapping {
             }
         }
     }
-    ["publish-firefox-release"] = new Job {
-        permissions = new Mapping {
-            ["contents"] = "write"
-        }
-        needs = new Listing {
-            "version"
-            "release"
-            "build-firefox"
-        }
-        steps = new Listing {
-            new ActionStep {
-                uses = "actions/download-artifact@master"
-                with = new Mapping {
-                    ["name"] = "theme-xpi"
-                    ["path"] = "./"
-                }
-            }
-            for (extension in firefoxUploadExtensions) {
-                new ActionStep {
-                    name = "Upload Artifact to Release"
-                    uses = "actions/upload-release-asset@v1"
-                    env = new Mapping {
-                        ["GITHUB_TOKEN"] = "${{ secrets.GITHUB_TOKEN }}"
-                    }
-                    with = new Mapping {
-                        ["upload_url"] = "${{ needs.release.outputs.upload_url }}"
-                        ["asset_path"] = "./theme.xpi"
-                        ["asset_name"] = "witchy-hazel-v${{ needs.version.outputs.version }}.unsigned.\(extension)"
-                        ["asset_content_type"] = "application/zip"
-                    }
-                }
-            }
-        }  
-    }
-    ["publish-chrome-release"] = new Job {
-        permissions = new Mapping {
-            ["contents"] = "write"
-        }
-        needs = new Listing {
-            "version"
-            "release"
-            "build-chrome"
-        }
-        steps = new Listing {
-            new ActionStep {
-                uses = "actions/download-artifact@master"
-                with = new Mapping {
-                    ["name"] = "theme-crx"
-                    ["path"] = "./"
-                }
-            }
-            new ActionStep {
-                name = "Upload Artifact to Release"
-                uses = "actions/upload-release-asset@v1"
-                env = new Mapping {
-                    ["GITHUB_TOKEN"] = "${{ secrets.GITHUB_TOKEN }}"
-                }
-                with = new Mapping {
-                    ["upload_url"] = "${{ needs.release.outputs.upload_url }}"
-                    ["asset_path"] = "./theme.crx"
-                    ["asset_name"] = "witchy-hazel-v${{ needs.version.outputs.version }}.crx"
-                    ["asset_content_type"] = "application/x-chrome-extension"
-                }
-            }
-        }  
-    }
+    // ["publish-firefox-release"] = new Job {
+    //     permissions = new Mapping {
+    //         ["contents"] = "write"
+    //     }
+    //     needs = new Listing {
+    //         "version"
+    //         "release"
+    //         "build-firefox"
+    //     }
+    //     steps = new Listing {
+    //         new ActionStep {
+    //             uses = "actions/download-artifact@master"
+    //             with = new Mapping {
+    //                 ["name"] = "theme-xpi"
+    //                 ["path"] = "./"
+    //             }
+    //         }
+    //         for (extension in firefoxUploadExtensions) {
+    //             new ActionStep {
+    //                 name = "Upload Artifact to Release"
+    //                 uses = "actions/upload-release-asset@v1"
+    //                 env = new Mapping {
+    //                     ["GITHUB_TOKEN"] = "${{ secrets.GITHUB_TOKEN }}"
+    //                 }
+    //                 with = new Mapping {
+    //                     ["upload_url"] = "${{ needs.release.outputs.upload_url }}"
+    //                     ["asset_path"] = "./theme.xpi"
+    //                     ["asset_name"] = "witchy-hazel-v${{ needs.version.outputs.version }}.unsigned.\(extension)"
+    //                     ["asset_content_type"] = "application/zip"
+    //                 }
+    //             }
+    //         }
+    //     }  
+    // }
+    // ["publish-chrome-release"] = new Job {
+    //     permissions = new Mapping {
+    //         ["contents"] = "write"
+    //     }
+    //     needs = new Listing {
+    //         "version"
+    //         "release"
+    //         "build-chrome"
+    //     }
+    //     steps = new Listing {
+    //         new ActionStep {
+    //             uses = "actions/download-artifact@master"
+    //             with = new Mapping {
+    //                 ["name"] = "theme-crx"
+    //                 ["path"] = "./"
+    //             }
+    //         }
+    //         new ActionStep {
+    //             name = "Upload Artifact to Release"
+    //             uses = "actions/upload-release-asset@v1"
+    //             env = new Mapping {
+    //                 ["GITHUB_TOKEN"] = "${{ secrets.GITHUB_TOKEN }}"
+    //             }
+    //             with = new Mapping {
+    //                 ["upload_url"] = "${{ needs.release.outputs.upload_url }}"
+    //                 ["asset_path"] = "./theme.crx"
+    //                 ["asset_name"] = "witchy-hazel-v${{ needs.version.outputs.version }}.crx"
+    //                 ["asset_content_type"] = "application/x-chrome-extension"
+    //             }
+    //         }
+    //     }  
+    // }
 }
