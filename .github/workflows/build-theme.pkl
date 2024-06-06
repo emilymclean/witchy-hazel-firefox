@@ -61,7 +61,7 @@ jobs = new Mapping {
             }
         }
     }
-    ["release-firefox"] = new Job {
+    ["release"] = new Job {
         needs = new Listing {
             "version"
         }
