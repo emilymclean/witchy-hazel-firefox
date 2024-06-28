@@ -1,5 +1,21 @@
 extends "package://github.com/BenMMcLean/pkl-github-actions/releases/download/v0.1.0-alpha.45/pkl-github-actions@0.1.0-alpha.45#/actions.pkl"
 
+local const JOB_VERSION = "version"
+local const JOB_RELEASE = "release"
+local const JOB_BUILD_FIREFOX = "build-firefox"
+local const JOB_BUILD_CHROME = "build-chrome"
+local const JOB_RELEASE_FIREFOX = "publish-firefox-release"
+local const JOB_RELEASE_CHROME = "publish-chrome-release"
+
+local const ARTIFACT_FIREFOX_XPI = "firefox-xpi"
+local const ARTIFACT_CHROME_CRX = "chrome-crx"
+local const ARTIFACT_CHROME_ZIP = "chrome-zip"
+
+local const FILE_FIREFOX_XPI = "theme.xpi"
+local const FILE_FIREFOX_ZIP = "theme.zip"
+local const FILE_CHROME_CRX = "theme.crx"
+local const FILE_CHROME_ZIP = "theme.zip"
+
 local checkout = new ActionStep {
     name = "Checkout code"
     uses = "actions/checkout@v2"
@@ -33,7 +49,7 @@ on = new On {
 }
 
 jobs = new Mapping {
-    ["version"] = new Job {
+    [JOB_VERSION] = new Job {
         outputs = new Mapping {
             ["version"] = "${{ steps.gitversion.outputs.semVer }}"
         }
@@ -61,28 +77,28 @@ jobs = new Mapping {
             }
         }
     }
-    ["build-firefox"] = new Job {
+    [JOB_BUILD_FIREFOX] = new Job {
         needs = new Listing {
-            "version"
+            JOB_VERSION
         }
         steps = new Listing {
             checkout
             updateManifestVersion
             new CommandStep {
-                run = "zip theme.xpi manifest.json"
+                run = "zip \(FILE_FIREFOX_XPI) manifest.json"
             }
             new ActionStep {
                 uses = "actions/upload-artifact@master"
                 with = new Mapping {
-                    ["name"] = "theme-xpi"
-                    ["path"] = "./theme.xpi"
+                    ["name"] = ARTIFACT_FIREFOX_XPI
+                    ["path"] = "./\(FILE_FIREFOX_XPI)"
                 }
             }
         }
     }
-    ["build-chrome"] = new Job {
+    [JOB_BUILD_CHROME] = new Job {
         needs = new Listing {
-            "version"
+            JOB_VERSION
         }
         steps = new Listing {
             checkout
@@ -96,6 +112,9 @@ jobs = new Mapping {
             new CommandStep {
                 run = "python rewrite-manifest.py"
             }
+            new CommandStep {
+                run = "zip \(FILE_CHROME_ZIP) chrome/"
+            }
             new ActionStep {
                 uses = "BenMMcLean/pack-chromium-extension@v1.0.1"
                 env = new Mapping {
@@ -103,27 +122,28 @@ jobs = new Mapping {
                 }
                 with = new Mapping {
                     ["input-folder"] = "chrome"
-                    ["output-file"] = "theme.crx"
+                    ["output-file"] = FILE_CHROME_CRX
                 }
-            }
-            new CommandStep {
-                run = "ls -l ."
-            }
-            new CommandStep {
-                run = "cat theme.crx"
             }
             new ActionStep {
                 uses = "actions/upload-artifact@master"
                 with = new Mapping {
-                    ["name"] = "theme-crx"
-                    ["path"] = "./theme.crx"
+                    ["name"] = ARTIFACT_CHROME_ZIP
+                    ["path"] = "./\(FILE_CHROME_ZIP)"
+                }
+            }
+            new ActionStep {
+                uses = "actions/upload-artifact@master"
+                with = new Mapping {
+                    ["name"] = ARTIFACT_CHROME_CRX
+                    ["path"] = "./\(FILE_CHROME_CRX)"
                 }
             }
         }
     }
-    ["release"] = new Job {
+    [JOB_RELEASE] = new Job {
         needs = new Listing {
-            "version"
+            JOB_VERSION
         }
         `if` = "github.event_name != 'pull_request'"
         permissions = new Mapping {
@@ -149,20 +169,20 @@ jobs = new Mapping {
             }
         }
     }
-    ["publish-firefox-release"] = new Job {
+    [JOB_RELEASE_FIREFOX] = new Job {
         permissions = new Mapping {
             ["contents"] = "write"
         }
         needs = new Listing {
-            "version"
-            "release"
-            "build-firefox"
+            JOB_VERSION
+            JOB_RELEASE
+            JOB_BUILD_FIREFOX
         }
         steps = new Listing {
             new ActionStep {
                 uses = "actions/download-artifact@master"
                 with = new Mapping {
-                    ["name"] = "theme-xpi"
+                    ["name"] = ARTIFACT_FIREFOX_XPI
                     ["path"] = "./"
                 }
             }
@@ -175,28 +195,50 @@ jobs = new Mapping {
                     }
                     with = new Mapping {
                         ["upload_url"] = "${{ needs.release.outputs.upload_url }}"
-                        ["asset_path"] = "./theme.xpi"
-                        ["asset_name"] = "witchy-hazel-v${{ needs.version.outputs.version }}.unsigned.\(extension)"
+                        ["asset_path"] = "./\(FILE_FIREFOX_XPI)"
+                        ["asset_name"] = "firefox-witchy-hazel-v${{ needs.version.outputs.version }}.unsigned.\(extension)"
                         ["asset_content_type"] = "application/zip"
                     }
                 }
             }
         }  
     }
-    ["publish-chrome-release"] = new Job {
+    [JOB_RELEASE_CHROME] = new Job {
+        strategy = new JobStrategy {
+            matrix = new Mapping {
+                ["name"] = new Listing {
+                    ARTIFACT_CHROME_CRX
+                    ARTIFACT_CHROME_ZIP
+                }
+                ["include"] = new Listing {
+                    new Mapping {
+                        ["name"] = ARTIFACT_CHROME_CRX
+                        ["file-name"] = FILE_CHROME_CRX
+                        ["extension"] = "crx"
+                        ["content-type"] = "application/x-chrome-extension"
+                    }
+                    new Mapping {
+                        ["name"] = ARTIFACT_CHROME_ZIP
+                        ["file-name"] = FILE_CHROME_ZIP
+                        ["extension"] = "zip"
+                        ["content-type"] = "application/zip"
+                    }
+                }
+            }
+        }
         permissions = new Mapping {
             ["contents"] = "write"
         }
         needs = new Listing {
-            "version"
-            "release"
-            "build-chrome"
+            JOB_VERSION
+            JOB_RELEASE
+            JOB_BUILD_CHROME
         }
         steps = new Listing {
             new ActionStep {
                 uses = "actions/download-artifact@master"
                 with = new Mapping {
-                    ["name"] = "theme-crx"
+                    ["name"] = "${{ matrix.name }}"
                     ["path"] = "./"
                 }
             }
@@ -208,9 +250,9 @@ jobs = new Mapping {
                 }
                 with = new Mapping {
                     ["upload_url"] = "${{ needs.release.outputs.upload_url }}"
-                    ["asset_path"] = "./theme.crx"
-                    ["asset_name"] = "witchy-hazel-v${{ needs.version.outputs.version }}.crx"
-                    ["asset_content_type"] = "application/x-chrome-extension"
+                    ["asset_path"] = "./${{ matrix.file-name }}"
+                    ["asset_name"] = "chrome-witchy-hazel-v${{ needs.version.outputs.version }}.unsigned.${{ matrix.extension }}"
+                    ["asset_content_type"] = "${{ matrix.content-type }}"
                 }
             }
         }  

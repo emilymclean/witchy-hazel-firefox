@@ -44,7 +44,7 @@ jobs:
     - run: zip theme.xpi manifest.json
     - uses: actions/upload-artifact@master
       with:
-        name: theme-xpi
+        name: firefox-xpi
         path: ./theme.xpi
   build-chrome:
     needs:
@@ -65,17 +65,20 @@ jobs:
       with:
         python-version: '3.10'
     - run: python rewrite-manifest.py
+    - run: zip theme.zip chrome/
     - env:
         EXTENSION_KEY: ${{ secrets.CHROME_SIGNING_KEY }}
       uses: BenMMcLean/pack-chromium-extension@v1.0.1
       with:
         input-folder: chrome
         output-file: theme.crx
-    - run: ls -l .
-    - run: cat theme.crx
     - uses: actions/upload-artifact@master
       with:
-        name: theme-crx
+        name: chrome-zip
+        path: ./theme.zip
+    - uses: actions/upload-artifact@master
+      with:
+        name: chrome-crx
         path: ./theme.crx
   release:
     permissions:
@@ -112,7 +115,7 @@ jobs:
     steps:
     - uses: actions/download-artifact@master
       with:
-        name: theme-xpi
+        name: firefox-xpi
         path: ./
     - name: Upload Artifact to Release
       env:
@@ -121,7 +124,7 @@ jobs:
       with:
         upload_url: ${{ needs.release.outputs.upload_url }}
         asset_path: ./theme.xpi
-        asset_name: witchy-hazel-v${{ needs.version.outputs.version }}.unsigned.zip
+        asset_name: firefox-witchy-hazel-v${{ needs.version.outputs.version }}.unsigned.zip
         asset_content_type: application/zip
     - name: Upload Artifact to Release
       env:
@@ -130,7 +133,7 @@ jobs:
       with:
         upload_url: ${{ needs.release.outputs.upload_url }}
         asset_path: ./theme.xpi
-        asset_name: witchy-hazel-v${{ needs.version.outputs.version }}.unsigned.xpi
+        asset_name: firefox-witchy-hazel-v${{ needs.version.outputs.version }}.unsigned.xpi
         asset_content_type: application/zip
   publish-chrome-release:
     permissions:
@@ -140,10 +143,24 @@ jobs:
     - release
     - build-chrome
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        name:
+        - chrome-crx
+        - chrome-zip
+        include:
+        - name: chrome-crx
+          file-name: theme.crx
+          extension: crx
+          content-type: application/x-chrome-extension
+        - name: chrome-zip
+          file-name: theme.zip
+          extension: zip
+          content-type: application/zip
     steps:
     - uses: actions/download-artifact@master
       with:
-        name: theme-crx
+        name: ${{ matrix.name }}
         path: ./
     - name: Upload Artifact to Release
       env:
@@ -151,6 +168,6 @@ jobs:
       uses: actions/upload-release-asset@v1
       with:
         upload_url: ${{ needs.release.outputs.upload_url }}
-        asset_path: ./theme.crx
-        asset_name: witchy-hazel-v${{ needs.version.outputs.version }}.crx
-        asset_content_type: application/x-chrome-extension
+        asset_path: ./${{ matrix.file-name }}
+        asset_name: chrome-witchy-hazel-v${{ needs.version.outputs.version }}.unsigned.${{ matrix.extension }}
+        asset_content_type: ${{ matrix.content-type }}
