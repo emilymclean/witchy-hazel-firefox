@@ -65,7 +65,7 @@ jobs:
     - run: zip theme.zip chrome/
     - env:
         EXTENSION_KEY: ${{ secrets.CHROME_SIGNING_KEY }}
-      uses: BenMMcLean/pack-chromium-extension-action@v1.0.3
+      uses: emilymclean/pack-chromium-extension-action@v1.0.3
       with:
         input-folder: chrome
         output-file: theme.crx
